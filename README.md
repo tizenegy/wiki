@@ -12,7 +12,9 @@ Once you have Pip installed, you can run pip3 install Django in your terminal to
 After installing Django, we can go through the steps of creating a new Django project:
 
 Run 
+
     django-admin startproject PROJECT_NAME 
+
 to create a number of starter files for our project. Run 
     cd PROJECT_NAME 
 to navigate into your new project’s directory.
