@@ -218,3 +218,314 @@ Notice that we passed a third argument into the render function here, one that i
 You’ll noticed that we used some new syntax: double curly brackets. This syntax allows us to access variables that we’ve provided in the context argument. Now, when we try it out: Template 1 Template 2
 
 Now, we’ve seen how we can modify our HTML templates based on the context we provide. However, the Django templating language is even more powerful than that, so let’s take a look at a few other ways it can be helpful:
+
+Conditionals:
+
+We may want to change what is displayed on our website depending on some conditions. For example, if you visit the site www.isitchristmas.com, you’ll probably be met with a page that looks like this: no But this website will change on Christmas day, when the website will say YES. To make something like this for ourselves, let’s try creating a similar application, where we check whether or not it is New Year’s Day. Let’s create a new app to do so, recalling our process for creating a new app:
+run python manage.py startapp newyear in the terminal.
+Edit settings.py, adding “newyear” as one of our INSTALLED_APPS
+Edit our project’s urls.py file, and include a path similar to the one we created for the hello app:
+
+    path('newyear/', include("newyear.urls"))
+
+Create another urls.py file within our new app’s directory, and update it to include a path similar to the index path in hello:
+
+    from django.urls import path
+    from . import views
+
+    urlpatterns = [
+        path("", views.index, name="index"),
+    ]
+
+Create an index function in views.py.
+
+Now that we’re set up with our new app, let’s figure out how to check whether or not it’s New Year’s Day. To do this, we can import Python’s datetime module. To get a sense for how this module works, we can look at the documentation, and then test it outside of Django using the Python interpreter.
+
+The Python interpreter is a tool we can use to test out small chunks of Python code. To use this, run python in your terminal, and then you’ll be able to type and run Python code within your terminal. When you’re done using the interpreter, run exit() to leave. 
+We can use this knowledge to construct a boolean expression that will evaluate to True if and only if today is New Year’s Day: now.day == 1 and now.month == 1
+Now that we have an expression we can use to evaluate whether or not it’s New Year’s Day, we can update our index function in views.py:
+
+    def index(request):
+        now = datetime.datetime.now()
+        return render(request, "newyear/index.html", {
+            "newyear": now.month == 1 and now.day == 1
+        })
+
+Now, let’s create our index.html template. We’ll have to again create a new folder called templates, a folder within that called newyear, and a file within that called index.html. Inside that file, we’ll write something like this:
+
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <title>Is it New Year's?</title>
+        </head>
+        <body>
+            {% if newyear %}
+                <h1>YES</h1>
+            {% else %}
+                <h1>NO</h1>
+            {% endif %}
+        </body>
+    </html>
+
+In the code above, notice that when we wish to include logic in our HTML files, we use {% and %} as opening and closing tags around logical statements. Also note that Django’s formatting language requires you to include an ending tag indicating that we are done with our if-else block. Now, we can open up to our page to see: No Now, to get a better idea of what’s going on behind the scenes, let’s inspect the element of this page: Source Notice that the HTML that is actually being sent to your web browser includes only the NO header, meaning that Django is using the HTML template we wrote to create a new HTML file, and then sending it to our web browser. If we cheat a little bit and make sure that our condition is always true, we see that the opposite case is filled:
+
+    def index(request):
+        now = datetime.datetime.now()
+        return render(request, "newyear/index.html", {
+            "newyear": True
+        })
+
+
+Styling
+
+If we want to add a CSS file, which is a static file because it doesn’t change, we’ll first create a folder called static, then create a newyear folder within that, and then a styles.css file within that. In this file, we can add any styling we wish just as we did in the first lecture:
+
+    h1 {
+        font-family: sans-serif;
+        font-size: 90px;
+        text-align: center;
+    }
+
+Now, to include this styling in our HTML file, we add the line {load static} to the top of our HTML template, which signals to Django that we wish to have access to the files in our static folder. Then, rather than hard-coding the link to a stylesheet as we did before, we’ll use some Django-specific syntax:
+
+    <link rel="stylesheet" href="{% static 'newyear/styles.css' %}">
+
+Now, if we restart the server, we can see that the styling changes were in fact applied: big no
+Tasks
+
+Now, let’s take what we’ve learned so far and apply it to a mini-project: creating a TODO list. Let’s start by, once again, creating a new app:
+
+run python manage.py startapp tasks in the terminal.
+Edit settings.py, adding “tasks” as one of our INSTALLED_APPS
+Edit our project’s urls.py file, and include a path similar to the one we created for the hello app:
+
+    path('tasks/', include("tasks.urls"))
+
+Create another urls.py file within our new app’s directory, and update it to include a path similar to the index path in hello:
+
+    from django.urls import path
+    from . import views
+
+    urlpatterns = [
+        path("", views.index, name="index"),
+    ]
+
+Create an index function in views.py.
+
+Now, let’s begin by attempting to simply create a list of tasks and then display them to a page. Let’s create a Python list at the top of views.py where we’ll store our tasks. Then, we can update our index function to render a template, and provide our newly-created list as context.
+
+    from django.shortcuts import render
+
+    tasks = ["foo", "bar", "baz"]
+
+    # Create your views here. def index(request):
+        return render(request, "tasks/index.html", {
+            "tasks": tasks
+        })
+
+Now, let’s work on creating our template HTML file:
+
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <title>Tasks</title>
+        </head>
+        <body>
+            <ul>
+                {% for task in tasks %}
+                    <li>{{ task }}</li>
+                {% endfor %}
+            </ul>
+        </body>
+    </html>
+
+Notice here that we are able to loop over our tasks using syntax similar to our conditionals from earlier, and also similar to a Python loop from Lecture 2. When we go to the tasks page now, we can see our list being rendered: tasks0
+Forms
+
+Now that we can see all of our current tasks as a list, we may want to be able to add some new tasks. To do this we’ll start taking a look at using forms to update a web page. Let’s begin by adding another function to views.py that will render a page with a form for adding a new task:
+
+    #Add a new task: def add(request):
+        return render(request, "tasks/add.html")
+
+Next, make sure to add another path to urls.py:
+
+    path("add", views.add, name="add")
+
+Now, we’ll create our add.html file, which is fairly similar to index.html, except that in the body we’ll include a form rather than a list:
+
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <title>Tasks</title>
+        </head>
+        <body>
+            <h1>Add Task:</h1>
+            <form action="">
+                <input type="text", name="task">
+                <input type="submit">
+            </form>
+        </body>
+    </html>
+
+However, what we’ve just done isn’t necessarily the best design, as we’ve just repeated the bulk of that HTML in two different files. Django’s templating language gives us a way to eliminate this poor design: template inheritance. This allows us to create a layout.html file that will contain the general structure of our page:
+
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <title>Tasks</title>
+        </head>
+        <body>
+            {% block body %}
+            {% endblock %}
+        </body>
+    </html>
+
+Notice that we’ve again used {%...%} to denote some sort of non-HTML logic, and in this case, we’re telling Django to fill this “block” with some text from another file. Now, we can alter our other two HTML files to look like:
+
+    index.html:
+
+    {% extends "tasks/layout.html" %}
+
+    {% block body %}
+        <h1>Tasks:</h1>
+        <ul>
+            {% for task in tasks %}
+                <li>{{ task }}</li>
+            {% endfor %}
+        </ul>
+    {% endblock %}
+
+    add.html:
+
+    {% extends "tasks/layout.html" %}
+
+    {% block body %}
+        <h1>Add Task:</h1>
+        <form action="">
+            <input type="text", name="task">
+            <input type="submit">
+        </form>
+    {% endblock %}
+
+Notice how we can now get rid of much of the repeated code by extending our layout file. Now, our index page remains the same, and we now have an add page as well: Add Next, it’s not ideal to have to type “/add” in the URL any time we want to add a new task, so we’ll probably want to add some links between pages. Instead of hard-coding links though, we can now use the name variable we assigned to each path in urls.py, and create a link that looks like this:
+
+    <a href="{% url 'add' %}">Add a New Task</a>
+
+where ‘add’ is the name of that path. We can do a similar thing in our add.html:
+
+    <a href="{% url 'index' %}">View Tasks</a>
+
+This could potentially create a problem though, as we have a few routes named index throughout our different apps. We can solve this by going into each of our app’s urls.py file, and adding an app_name variable, so that the files now look something like this:
+
+    from django.urls import path
+    from . import views
+
+    app_name = "tasks"
+    urlpatterns = [
+        path("", views.index, name="index"),
+        path("add", views.add, name="add")
+    ]
+
+We can then change our links from simply index and add to tasks:index and tasks:add
+
+    <a href="{% url 'tasks:index' %}">View Tasks</a>
+
+    <a href="{% url 'tasks:add' %}">Add a New Task</a>
+
+Now, let’s work on making sure the form actually does something when the user submits it. We can do this by adding an action to the form we have created in add.html:
+
+    <form action="{% url 'tasks:add' %}" method="post">
+
+This means that once the form is submitted, we will be routed back to the add URL. Here we’ve specified that we’ll be using a post method rather than a get method, which is typically what we’ll use any time a form could alter the state of that web page.
+
+We need to add a bit more to this form now, because Django requires a token to prevent Cross-Site Request Forgery (CSRF) Attack. This is an attack where a malicious user attempts to send a request to your server from somewhere other than your site. This could be a really big problem for some websites. Say, for example, that a banking website has a form for one user to transfer money to another one. It would be catastrophic if someone could submit a transfer from outside of the bank’s website!
+
+To solve this problem, when Django sends a response rendering a template, it also provides a CSRF token that is unique with each new session on the site. Then, when a request is submitted, Django checks to make sure the CSRF token associated with the request matches one that it has recently provided. Therefore, if a malicious user on another site attempted to submit a request, they would be blocked due to an invalid CSRF token. This CSRF validation is built into the Django Middleware framework, which can intervene in the request-response processing of a Django app. We won’t go into any more detail about Middleware in this course, but do look at the documentation if interested!
+
+To incorporate this technology into our code, we must add a line to our form in add.html.
+
+    <form action="{% url 'tasks:add' %}" method="post">
+        {% csrf_token %}
+        <input type="text", name="task">
+        <input type="submit">
+    </form>
+
+This line adds a hidden input field with the CSRF token provided by Django, such that when we reload the page, it looks as though nothing has changed. However, if we inspect element, we’ll notice that a new input field has been added: CSRF
+Django Forms
+
+While we can create forms by writing raw HTML as we’ve just done, Django provides an even easier way to collect information from a user: Django Forms. In order to use this method, we’ll add the following to the top of views.py to import the forms module:
+
+from django import forms
+
+Now, we can create a new form within views.py by creating a Python class called NewTaskForm:
+
+    class NewTaskForm(forms.Form):
+        task = forms.CharField(label="New Task")
+
+Now, let’s go through what’s going on in that class:
+
+Inside the parentheses after NewTaskForm, we see that we have forms.Form. This is because our new form inherits from a class called Form that is included in the forms module. We’ve already seen how inheritance can be used in Django’s templating language and for styling using Sass. This is another example of how inheritance is used to take a more general description (the forms.Form class) and narrow it down to what we want (our new Form). Inheritance is a key part of Object Oriented Programming that we won’t discuss in detail during this course, but there are many online resources available to learn about the topic!
+Inside this class, we can specify what information we would like to collect from the user, in this case the name of a task.
+We specify that this should be a textual input by writing forms.CharField, but there are many other input fields included in Django’s form module that we can choose from.
+Within this CharField, we specify a label, which will appear to the user when they load the page. A label is just one of many arguments we can pass into a form field.
+
+Now that we’ve created a NewTaskForm class, we can include it in the context while rendering the add page:
+
+    #Add a new task: def add(request):
+        return render(request, "tasks/add.html", {
+            "form": NewTaskForm()
+        })
+
+Now, within add.html, we can replace our input field with the form we just created:
+
+    {% extends "tasks/layout.html" %}
+
+    {% block body %}
+        <h1>Add Task:</h1>
+        <form action="{% url 'tasks:add' %}" method="post">
+            {% csrf_token %}
+            {{ form }}
+            <input type="submit">
+        </form>
+        <a href="{% url 'tasks:index' %}">View Tasks</a>
+    {% endblock %}
+
+There are several advantages to using the forms module rather than manually writing an HTML form:
+
+If we want to add new fields to the form, we can simply add them in views.py without typing additional HTML.
+Django automatically performs client-side validation, or validation local to the user’s machine. meaning it will not allow a user to submit their form if it is incomplete.
+Django provides simple server-side validation, or validation that occurs once form data has reached the server.
+In the next lecture, we’ll begin using models to store information, and Django makes it very simple to create a form based on a model.
+
+Now that we have a form set up, let’s work on what happens when a user clicks the submit button. When a user navigates to the add page by clicking a link or typing in the URL, they submit a GET request to the server, which we’ve already handled in our add function. When a user submits a form though, they send a POST request to the server, which at the moment is not handled in the add function. We can handle a POST method by adding a condition based on the request argument our function takes in. The comments in the code below explain the purpose of each line:
+
+    #Add a new task: def add(request):
+
+        # Check if method is POST     if request.method == "POST":
+
+            # Take in the data the user submitted and save it as form         form = NewTaskForm(request.POST)
+
+            # Check if form data is valid (server-side)         if form.is_valid():
+
+                # Isolate the task from the 'cleaned' version of form data             task = form.cleaned_data["task"]
+
+                # Add the new task to our list of tasks             tasks.append(task)
+
+                # Redirect user to list of tasks             return HttpResponseRedirect(reverse("tasks:index"))
+
+            else:
+
+                # If the form is invalid, re-render the page with existing information.             return render(request, "tasks/add.html", {
+                    "form": form
+                })
+
+        return render(request, "tasks/add.html", {
+            "form": NewTaskForm()
+        })
+
+A quick note: in order to redirect the user after a successful submission, we need a few more imports:
+
+    from django.urls import reverse
+    from django.http import HttpResponseRedirect
+
+Sessions
