@@ -529,3 +529,47 @@ A quick note: in order to redirect the user after a successful submission, we ne
     from django.http import HttpResponseRedirect
 
 Sessions
+
+
+At this point, we’ve successfully built an application that allows us to add tasks to a growing list. However, it may be a problem that we store these tasks as a global variable, as it means that all of the users who visit the page see the exact same list. In order to solve this problem we’re going to employ a tool known as sessions.
+
+Sessions are a way to store unique data on the server side for each new visit to a website.
+
+To use sessions in our application, we’ll first delete our global tasks variable, then alter our index function, and finally make sure that anywhere else we had used the variable tasks, we replace it with request.session["tasks"]
+
+    def index(request):
+
+        # Check if there already exists a "tasks" key in our session
+        if "tasks" not in request.session:
+
+            # If not, create a new list         request.session["tasks"] = []
+
+        return render(request, "tasks/index.html", {
+            "tasks": request.session["tasks"]
+        })
+
+    #Add a new task: def add(request):
+        if request.method == "POST":
+
+            # Take in the data the user submitted and save it as form         form = NewTaskForm(request.POST)
+
+            # Check if form data is valid (server-side)         if form.is_valid():
+
+                # Isolate the task from the 'cleaned' version of form data             task = form.cleaned_data["task"]
+
+                # Add the new task to our list of tasks             request.session["tasks"] += [task]
+
+                # Redirect user to list of tasks             return HttpResponseRedirect(reverse("tasks:index"))
+            else:
+
+                # If the form is invalid, re-render the page with existing information.             return render(request, "tasks/add.html", {
+                    "form": form
+                })
+
+        return render(request, "tasks/add.html", {
+            "form": NewTaskForm()
+        })
+
+Finally, before Django will be able to store this data, we must run python manage.py migrate in the terminal. Next week we’ll talk more about what a migration is, but for now just know that the above command allows us to store sessions.
+
+That’s all for this lecture! Next time we’ll be working on using Django to store, access, and manipulate data.
