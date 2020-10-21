@@ -8,7 +8,16 @@ from django.contrib.auth import authenticate, login, logout
 
 def index(request):
     if not request.user.is_authenticated:
-        return HttpResponseRedirect(reverse("users:login"))
+        return render(request, "users/login.html", {
+        "message": "Please login first."
+    })
+    return render(request, "users/index.html")
+
+def user(request):
+    if not request.user.is_authenticated:
+        return render(request, "users/login.html", {
+        "message": "Please login first."
+    })
     return render(request, "users/user.html")
 
 def login_view(request):
@@ -18,7 +27,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return HttpResponseRedirect(reverse("users:index"))
+            return HttpResponseRedirect(reverse("users:user"))
         else:
             return render(request, "users/login.html",{
                 "message": "Invalid credentials."
@@ -26,4 +35,8 @@ def login_view(request):
     return render(request, "users/login.html")
 
 def logout_view(request):
-    return render(request, "users/login.html")
+    logout(request)
+    return render(request, "users/login.html", {
+        "message": "Logged out succesfully"
+    })
+
